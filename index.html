@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3D Print Shop</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+<img src="images/logo.png" alt="3D Print Shop Logo" id="logo">
+<h1>3D Printed Keychains & Toys</h1>
+<p>Your home for high-quality, custom 3D printed products</p>
+</header>
+
+<section id="about-section">
+<h2>About Our Products</h2>
+<p>We create unique, durable, and fully customisable 3D printed keychains, toys, figures, and more. Everything is made with precision printers and high-quality materials.</p>
+</section>
+
+<section id="custom-section">
+<h2>Product Customisation</h2>
+<div class="custom-box">
+<p>Choose how you want your 3D printed item to look!</p>
+<ul>
+<li>Pick your colour (single or multi-colour)</li>
+<li>Choose size options (small, medium, large)</li>
+<li>Add custom text or initials</li>
+<li>Select surface finish (smooth, matte, textured)</li>
+<li>Optional attachments (chains, hooks, stands)</li>
+</ul>
+<p>Tell us exactly what you want — we will shape it into reality.</p>
+</div>
+</section>
+
+<section id="shop-section">
+<h2>Shop</h2>
+<div class="shop-grid" id="shop-grid"></div>
+</section>
+
+<section id="cart-section">
+<h2>Your Cart</h2>
+<div id="cart-items">(Your cart is empty)</div>
+<p><strong>Total: £<span id="cart-total">0.00</span></strong></p>
+<button class="btn" id="checkout-btn">Proceed to Checkout</button>
+</section>
+
+<section id="checkout-section" style="display:none;">
+<h2>Checkout</h2>
+<p>Secure payments handled by PayPal.</p>
+<div id="paypal-button-container"></div>
+<div id="paypal-error" role="alert" style="display:none;"></div>
+</section>
+
+<section id="success-section" style="display:none;">
+<h2>Payment Successful!</h2>
+<p>Thank you for your purchase. Your order is being processed!</p>
+</section>
+
+<section id="contact-section">
+<h2>Contact</h2>
+<p>Email: 3dtoysforkids@gmail.com</p>
+<button class="btn" onclick="location.href='mailto:3dtoysforkids@gmail.com'">Contact Us</button>
+</section>
+
+<footer>
+<p>© 2025 3D Print Shop</p>
+</footer>
+
+<script>
+const PAYPAL_CLIENT_ID = 'AWg-GRCMBts-nkcYoIV3md1sKN3kKc4HuZ7GBJtdiPr5z1UV2Jup0BIVYcLg37PGMo_irfyXs92-jio8';
+let cart = [];
+let paypalLoaded = false;
+let paypalRendered = false;
+
+// Sounds
+const clickSound = new Audio('sounds/click.mp3');
+const successSound = new Audio('sounds/success.mp3');
+
+function playClick() { clickSound.play(); }
+function playSuccess() { successSound.play(); }
+
+document.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', playClick));
+
+// Load products from JSON
+fetch('products.json').then(res=>res.json()).then(data=>{
+  const shopGrid = document.getElementById('shop-grid');
+  data.forEach(product=>{
+    const card = document.createElement('div'); card.className='card';
+    if(product.mysteryImage){
+      const mysteryImg = document.createElement('img'); mysteryImg.src=product.mysteryImage; mysteryImg.alt='Mystery Image'; card.appendChild(mysteryImg);
+    }
+    const img = document.createElement('img'); img.src=product.image; img.alt=product.name; card.appendChild(img);
+    const h3 = document.createElement('h3'); h3.textContent=product.name; card.appendChild(h3);
+    const p = document.createElement('p'); p.textContent=product.description; card.appendChild(p);
+    const price = document.createElement('p'); price.innerHTML='<strong>£'+product.price.toFixed(2)+'</strong>'; card.appendChild(price);
+    const btn = document.createElement('button'); btn.textContent='Add to Cart'; btn.onclick=()=>addToCart(product.name,product.price); card.appendChild(btn);
+    shopGrid.appendChild(card);
+  });
+});
+
+function addToCart(name, price){cart.push({name,price});updateCart();}
+function removeFromCart(index){cart.splice(index,1);updateCart();}
+function updateCart(){
+  const cartDiv=document.getElementById('cart-items'); const totalSpan=document.getElementById('cart-total'); cartDiv.innerHTML='';
+  if(cart.length===0){cartDiv.textContent='(Your cart is empty)'; totalSpan.textContent='0.00'; return;}
+  let total=0; cart.forEach((item,i)=>{ const p=document.createElement('p'); p.textContent=`${item.name} - £${item.price.toFixed(2)}`;
+    const btn=document.createElement('button'); btn.className='remove-btn'; btn.textContent='Remove'; btn.onclick=()=>{removeFromCart(i); playClick();}; p.appendChild(btn); cartDiv.appendChild(p); total+=item.price; }); totalSpan.textContent=total.toFixed(2);
+}
+
+document.getElementById('checkout-btn').addEventListener('click',()=>{
+  if(cart.length===0){alert('Your cart is empty.'); return;}
+  document.getElementById('checkout-section').style.display='block'; document.getElementById('paypal-error').style.display='none';
+  if(paypalRendered) return;
+  if(!paypalLoaded){ const script=document.createElement('script'); script.src=`https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(PAYPAL_CLIENT_ID)}&currency=GBP`;
+    script.onload=()=>{paypalLoaded=true; renderPaypalButtons();}; script.onerror=()=>{const errEl=document.getElementById('paypal-error'); errEl.textContent='Failed to load PayPal. Try again later.'; errEl.style.display='block';}; document.head.appendChild(script);} else {renderPaypalButtons();}
+});
+
+function renderPaypalButtons(){
+  if(typeof paypal==='undefined'){return;}
+  const total=cart.reduce((s,i)=>s+i.price,0).toFixed(2);
+  paypal.Buttons({
+    style:{layout:'vertical'},
+    createOrder:(data,actions)=>actions.order.create({purchase_units:[{amount:{value:total}}]}),
+    onApprove:(data,actions)=>actions.order.capture().then(details=>{
+      document.getElementById('checkout-section').style.display='none';
+      document.getElementById('success-section').style.display='block';
+      cart=[]; updateCart(); playSuccess(); paypalRendered=true;
+    }),
+    onError:(err)=>{const errEl=document.getElementById('paypal-error'); errEl.textContent='Payment error. Please try again.'; errEl.style.display='block'; console.error(err);}
+  }).render('#paypal-button-container');
+  document.getElementById('paypal-button-container').style.display='block';
+  paypalRendered=true;
+}
+</script>
+</body>
+</html>

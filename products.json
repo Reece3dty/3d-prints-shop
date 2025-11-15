@@ -1,0 +1,5 @@
+[
+{"name":"Custom Keychain","description":"A premium 3D printed keychain in your chosen colour.","price":4.99,"image":"images/keychain.png","mysteryImage":"images/mystery-keychain.png"},
+{"name":"3D Printed Toy","description":"A durable toy with smooth finish & fun colours.","price":9.99,"image":"images/toy.png","mysteryImage":"images/mystery-toy.png"},
+{"name":"Custom Name Tag","description":"Personalised 3D printed name tag for bags or keys.","price":6.49,"image":"images/nametag.png","mysteryImage":"images/mystery-nametag.png"}
+]
